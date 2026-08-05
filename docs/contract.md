@@ -1,3 +1,0 @@
-# Concurrency contract
-
-The certification launches multiple independent `dpm apply` processes against one target. The first wave may contain explicitly logged contenders while the current production implementation does not yet hold a database-wide lock across planning, execution, and final verification. The non-negotiable contract is that at least one contender succeeds, every failed contender is actionable, the database converges, and an idempotent second wave succeeds completely. Once production-wide serialization lands, this repository should tighten the first-wave assertion to require deterministic lock acquisition and timeout behavior.
