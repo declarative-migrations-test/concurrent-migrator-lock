@@ -53,7 +53,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Verify immutable source, namespace, and migration pins
+      - name: Verify immutable source and distinct migration pins
         shell: bash
         run: |
           set -euo pipefail
@@ -66,10 +66,21 @@ jobs:
 
           contract = json.loads(Path('canonical-quote-source.json').read_text())
           source = Path('canonical-api')
-          observed = subprocess.check_output(
+          observed_source = subprocess.check_output(
               ['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True
           ).strip()
-          assert observed == contract['sourceCommit']
+          observed_certification_dpm = subprocess.check_output(
+              [
+                  'git',
+                  '-C',
+                  'vendor/declarative-postgres-migrate.rs',
+                  'rev-parse',
+                  'HEAD',
+              ],
+              text=True,
+          ).strip()
+          assert observed_source == contract['sourceCommit']
+          assert observed_certification_dpm == contract['certificationDpmCommit']
           assert hashlib.sha256(
               (source / 'db/schema.sql').read_bytes()
           ).hexdigest() == contract['schemaSha256']

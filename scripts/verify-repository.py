@@ -47,11 +47,12 @@ expected_source_keys = {
     "namespacePath",
     "dpmRepository",
     "dpmCommit",
+    "certificationDpmCommit",
     "minimumPostgresMajor",
 }
 if set(source) != expected_source_keys:
     raise SystemExit("Canonical quote source manifest fields drifted")
-if source["schemaVersion"] != 1:
+if source["schemaVersion"] != 2:
     raise SystemExit("Canonical source manifest version drifted")
 if source["sourceRepository"] != "canonical-cloud/canonical-api-server.rs":
     raise SystemExit("Canonical source repository drifted")
@@ -69,8 +70,10 @@ if source["namespacePath"] != "db/namespace.json":
     raise SystemExit("Canonical namespace path drifted")
 if source["dpmRepository"] != production["repository"]:
     raise SystemExit("Canonical DPM repository drifted")
-if source["dpmCommit"] != expected_dpm:
-    raise SystemExit("Canonical DPM revision drifted")
+if not re.fullmatch(r"[0-9a-f]{40}", source["dpmCommit"]):
+    raise SystemExit("Canonical source-declared DPM revision is invalid")
+if source["certificationDpmCommit"] != expected_dpm:
+    raise SystemExit("Canonical certification DPM revision drifted")
 if source["minimumPostgresMajor"] != 17:
     raise SystemExit("Canonical minimum PostgreSQL major drifted")
 
@@ -106,6 +109,7 @@ for required_text in (
     "postgres: ['17', '18']",
     "toolchain: \"1.95.0\"",
     "persist-credentials: false",
+    "certificationDpmCommit",
     source["schemaPath"],
     source["bootstrapPath"],
     source["grantsPath"],
@@ -142,5 +146,6 @@ for path in tracked_files:
 
 print(
     f"validated {manifest['organization']}/{manifest['repository']} with "
-    f"Canonical source {source['sourceCommit']} and DPM {expected_dpm}"
+    f"Canonical source {source['sourceCommit']}, source-declared DPM "
+    f"{source['dpmCommit']}, and certification DPM {expected_dpm}"
 )
