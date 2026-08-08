@@ -6,7 +6,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 manifest = json.loads((root / "bootstrap-manifest.json").read_text())
-expected_commit = "21eb846e356b2a5aff068b21e77903e6cca50452"
+expected_commit = "a5e868acc0206fa9c3e91b5e36e0b1b111805885"
 required = [
     "README.md",
     "AGENTS.md",
@@ -52,4 +52,7 @@ for path in root.rglob("*"):
         raise SystemExit(f"conflict marker in {relative}")
     if re.search(r"gh[pousr]_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY", text):
         raise SystemExit(f"credential-shaped content in {relative}")
-print(f"validated {manifest['organization']}/{manifest['repository']}")
+print(
+    f"validated {manifest['organization']}/{manifest['repository']} "
+    f"against {manifest['production_dependency']['repository']}@{expected_commit}"
+)
