@@ -43,6 +43,15 @@ jobs:
           workspaces: vendor/declarative-postgres-migrate.rs -> target
       - name: Validate repository contract
         run: python3 scripts/verify-repository.py
+      - name: Check bounded formal model at the pinned product SHA
+        run: python3 vendor/declarative-postgres-migrate.rs/formal/model_check.py
+      - name: Check migration borrow properties at the pinned product SHA
+        env:
+          PROPTEST_CASES: 4096
+        run: >-
+          cargo test
+          --manifest-path vendor/declarative-postgres-migrate.rs/Cargo.toml
+          --locked --test formal
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
       - name: Build pinned dpm
