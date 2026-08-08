@@ -6,53 +6,141 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 manifest = json.loads((root / "bootstrap-manifest.json").read_text())
-expected_commit = "a5e868acc0206fa9c3e91b5e36e0b1b111805885"
+source = json.loads((root / "canonical-quote-source.json").read_text())
+expected_dpm = "a5e868acc0206fa9c3e91b5e36e0b1b111805885"
+
 required = [
     "README.md",
     "AGENTS.md",
     "LICENSE",
     ".gitmodules",
     "bootstrap-manifest.json",
+    "canonical-quote-source.json",
     "scripts/build-dpm.sh",
+    "scripts/test-concurrency.sh",
+    "scripts/test-canonical-quote-concurrency.sh",
     ".github/workflows/ci.yml",
+    ".github/workflows/canonical-quote.yml",
 ]
 missing = [path for path in required if not (root / path).exists()]
 if missing:
     raise SystemExit(f"missing required files: {missing}")
-if manifest["production_dependency"]["commit"] != expected_commit:
-    raise SystemExit("production dependency pin drifted in the manifest")
 
-vendor = root / "vendor" / "declarative-postgres-migrate.rs"
-try:
-    actual_commit = subprocess.check_output(
-        ["git", "-C", str(vendor), "rev-parse", "HEAD"],
-        text=True,
-    ).strip()
-except subprocess.CalledProcessError as error:
-    raise SystemExit("unable to inspect the production dependency submodule") from error
-if actual_commit != expected_commit:
+production = manifest.get("production_dependency", {})
+if production.get("repository") != "declarative-migrations/declarative-postgres-migrate.rs":
+    raise SystemExit("production dependency repository drifted")
+if production.get("path") != "vendor/declarative-postgres-migrate.rs":
+    raise SystemExit("production dependency path drifted")
+if production.get("transport") != "git-submodule":
+    raise SystemExit("production dependency transport drifted")
+if production.get("commit") != expected_dpm:
+    raise SystemExit("production dependency pin drifted")
+
+expected_source_keys = {
+    "schemaVersion",
+    "sourceRepository",
+    "sourceCommit",
+    "schemaPath",
+    "schemaSha256",
+    "bootstrapPath",
+    "grantsPath",
+    "namespacePath",
+    "dpmRepository",
+    "dpmCommit",
+    "minimumPostgresMajor",
+}
+if set(source) != expected_source_keys:
+    raise SystemExit("Canonical quote source manifest fields drifted")
+if source["schemaVersion"] != 1:
+    raise SystemExit("Canonical source manifest version drifted")
+if source["sourceRepository"] != "canonical-cloud/canonical-api-server.rs":
+    raise SystemExit("Canonical source repository drifted")
+if not re.fullmatch(r"[0-9a-f]{40}", source["sourceCommit"]):
+    raise SystemExit("Canonical source commit is not an exact SHA")
+if source["schemaPath"] != "db/schema.sql":
+    raise SystemExit("Canonical schema path drifted")
+if not re.fullmatch(r"[0-9a-f]{64}", source["schemaSha256"]):
+    raise SystemExit("Canonical schema digest is invalid")
+if source["bootstrapPath"] != "db/bootstrap.sql":
+    raise SystemExit("Canonical bootstrap path drifted")
+if source["grantsPath"] != "db/grants.sql":
+    raise SystemExit("Canonical grants path drifted")
+if source["namespacePath"] != "db/namespace.json":
+    raise SystemExit("Canonical namespace path drifted")
+if source["dpmRepository"] != production["repository"]:
+    raise SystemExit("Canonical DPM repository drifted")
+if source["dpmCommit"] != expected_dpm:
+    raise SystemExit("Canonical DPM revision drifted")
+if source["minimumPostgresMajor"] != 17:
+    raise SystemExit("Canonical minimum PostgreSQL major drifted")
+
+index = subprocess.check_output(
+    ["git", "-C", str(root), "ls-files", "--stage", "-z"],
+    text=False,
+)
+tracked_files: list[Path] = []
+observed_gitlink = None
+for entry in index.split(b"\0"):
+    if not entry:
+        continue
+    metadata, raw_path = entry.split(b"\t", 1)
+    mode, object_id, stage = metadata.decode("ascii").split()
+    path = Path(raw_path.decode("utf-8"))
+    if stage != "0":
+        raise SystemExit(f"unmerged index entry for {path}")
+    if mode == "160000":
+        if path.as_posix() == production["path"]:
+            observed_gitlink = object_id
+        continue
+    tracked_files.append(root / path)
+if observed_gitlink != expected_dpm:
     raise SystemExit(
-        f"production dependency checkout drifted: expected {expected_commit}, observed {actual_commit}"
+        f"production dependency gitlink drifted: expected {expected_dpm}, "
+        f"observed {observed_gitlink}"
     )
 
-for path in root.rglob("*"):
-    relative = path.relative_to(root)
-    if (
-        not path.is_file()
-        or ".git" in relative.parts
-        or (relative.parts and relative.parts[0] == "vendor")
-        or path.stat().st_size > 1_000_000
-    ):
+canonical_workflow = (root / ".github/workflows/canonical-quote.yml").read_text()
+for required_text in (
+    f"repository: {source['sourceRepository']}",
+    f"ref: {source['sourceCommit']}",
+    "postgres: ['17', '18']",
+    "toolchain: \"1.95.0\"",
+    "persist-credentials: false",
+    source["schemaPath"],
+    source["bootstrapPath"],
+    source["grantsPath"],
+    source["namespacePath"],
+):
+    if required_text not in canonical_workflow:
+        raise SystemExit(f"Canonical workflow omits {required_text}")
+
+base_workflow = (root / ".github/workflows/ci.yml").read_text()
+for required_text in (
+    "toolchain: stable",
+    "components: clippy",
+    "PROPTEST_CASES: 4096",
+    "--test plan_safety",
+    "--test lease_contract",
+    "cockroachdb/cockroach:v25.2.4",
+    "persist-credentials: false",
+):
+    if required_text not in base_workflow:
+        raise SystemExit(f"formal concurrency workflow omits {required_text}")
+
+credential = re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY")
+for path in tracked_files:
+    if not path.is_file() or path.stat().st_size > 1_000_000:
         continue
     try:
         text = path.read_text()
     except UnicodeDecodeError:
         continue
     if any(marker in text for marker in ("<" * 7, "=" * 7, ">" * 7)):
-        raise SystemExit(f"conflict marker in {relative}")
-    if re.search(r"gh[pousr]_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY", text):
-        raise SystemExit(f"credential-shaped content in {relative}")
+        raise SystemExit(f"conflict marker in {path.relative_to(root)}")
+    if credential.search(text):
+        raise SystemExit(f"credential-shaped content in {path.relative_to(root)}")
+
 print(
-    f"validated {manifest['organization']}/{manifest['repository']} "
-    f"against {manifest['production_dependency']['repository']}@{expected_commit}"
+    f"validated {manifest['organization']}/{manifest['repository']} with "
+    f"Canonical source {source['sourceCommit']} and DPM {expected_dpm}"
 )
