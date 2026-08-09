@@ -2,11 +2,11 @@
 
 Concurrent migrator stress certification, final convergence proof, idempotent replay, and actionable contender failure classification.
 
-This repository is part of the isolated `declarative-migrations-test` certification fleet. It pins the production implementation as a Git submodule at `declarative-migrations/declarative-postgres-migrate.rs@d05a7880987ddaa271fa88b52c787390ef12b899` and exercises real PostgreSQL and CockroachDB instances in GitHub Actions.
+This repository is part of the isolated `declarative-migrations-test` certification fleet. It pins the certification implementation as a Git submodule at `declarative-migrations/declarative-postgres-migrate.rs@a5e868acc0206fa9c3e91b5e36e0b1b111805885` and exercises real PostgreSQL and CockroachDB instances in GitHub Actions. The Canonical source contract independently records its production DPM revision `d05a7880987ddaa271fa88b52c787390ef12b899`, so the lane detects both application-contract drift and migration-engine regressions.
 
 ## Canonical quote concurrency lane
 
-The Canonical lane checks out the verified merge `canonical-cloud/canonical-api-server.rs@26967bed96b1b48ea846c3fd418018ea40f4b9e1` and verifies its schema digest, dedicated `canonical_cloud__quote` namespace, bootstrap/grants paths, minimum PostgreSQL major, and exact DPM revision.
+The Canonical lane checks out `canonical-cloud/canonical-api-server.rs@7987c05944df5c03ff2fcbeeedf2c8e79f973d75` exactly and verifies its schema digest, dedicated `canonical_cloud__quote` namespace, bootstrap/grants paths, minimum PostgreSQL major, source-declared DPM revision, and distinct certification DPM revision.
 
 On supported PostgreSQL 17 and 18 it runs eight concurrent applies for:
 
