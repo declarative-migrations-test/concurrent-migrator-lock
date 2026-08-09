@@ -9,6 +9,6 @@
   "namespacePath": "db/namespace.json",
   "dpmRepository": "declarative-migrations/declarative-postgres-migrate.rs",
   "dpmCommit": "d05a7880987ddaa271fa88b52c787390ef12b899",
-  "certificationDpmCommit": "a5e868acc0206fa9c3e91b5e36e0b1b111805885",
+  "certificationDpmCommit": "b829384df970e3b9415b566ef9d87511bdc163c7",
   "minimumPostgresMajor": 17
 }
