@@ -1,9 +1,9 @@
 {
   "bootstrap_date": "2026-08-04",
-  "description": "Concurrent migrator stress certification, final convergence proof, idempotent replay, and actionable contender failure classification.",
+  "description": "Exact-SHA formal lifecycle, typed-plan borrow checking, advisory-lease exclusion, generic PostgreSQL/Cockroach contention, Canonical quote PostgreSQL 17-18 contention, convergence, recovery, and idempotent replay certification.",
   "organization": "declarative-migrations-test",
   "production_dependency": {
-    "commit": "d05a7880987ddaa271fa88b52c787390ef12b899",
+    "commit": "a5e868acc0206fa9c3e91b5e36e0b1b111805885",
     "path": "vendor/declarative-postgres-migrate.rs",
     "repository": "declarative-migrations/declarative-postgres-migrate.rs",
     "transport": "git-submodule"

@@ -7,7 +7,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 manifest = json.loads((root / "bootstrap-manifest.json").read_text())
 source = json.loads((root / "canonical-quote-source.json").read_text())
-expected_dpm = "d05a7880987ddaa271fa88b52c787390ef12b899"
+expected_dpm = "a5e868acc0206fa9c3e91b5e36e0b1b111805885"
 
 required = [
     "README.md",
@@ -47,11 +47,12 @@ expected_source_keys = {
     "namespacePath",
     "dpmRepository",
     "dpmCommit",
+    "certificationDpmCommit",
     "minimumPostgresMajor",
 }
 if set(source) != expected_source_keys:
     raise SystemExit("Canonical quote source manifest fields drifted")
-if source["schemaVersion"] != 1:
+if source["schemaVersion"] != 2:
     raise SystemExit("Canonical source manifest version drifted")
 if source["sourceRepository"] != "canonical-cloud/canonical-api-server.rs":
     raise SystemExit("Canonical source repository drifted")
@@ -69,8 +70,10 @@ if source["namespacePath"] != "db/namespace.json":
     raise SystemExit("Canonical namespace path drifted")
 if source["dpmRepository"] != production["repository"]:
     raise SystemExit("Canonical DPM repository drifted")
-if source["dpmCommit"] != expected_dpm:
-    raise SystemExit("Canonical DPM revision drifted")
+if not re.fullmatch(r"[0-9a-f]{40}", source["dpmCommit"]):
+    raise SystemExit("Canonical source-declared DPM revision is invalid")
+if source["certificationDpmCommit"] != expected_dpm:
+    raise SystemExit("Canonical certification DPM revision drifted")
 if source["minimumPostgresMajor"] != 17:
     raise SystemExit("Canonical minimum PostgreSQL major drifted")
 
@@ -99,24 +102,34 @@ if observed_gitlink != expected_dpm:
         f"observed {observed_gitlink}"
     )
 
-workflow = (root / ".github/workflows/canonical-quote.yml").read_text()
+canonical_workflow = (root / ".github/workflows/canonical-quote.yml").read_text()
 for required_text in (
     f"repository: {source['sourceRepository']}",
     f"ref: {source['sourceCommit']}",
     "postgres: ['17', '18']",
     "toolchain: \"1.95.0\"",
     "persist-credentials: false",
+    "certificationDpmCommit",
     source["schemaPath"],
     source["bootstrapPath"],
     source["grantsPath"],
     source["namespacePath"],
 ):
-    if required_text not in workflow:
+    if required_text not in canonical_workflow:
         raise SystemExit(f"Canonical workflow omits {required_text}")
 
 base_workflow = (root / ".github/workflows/ci.yml").read_text()
-if 'toolchain: "1.95.0"' not in base_workflow:
-    raise SystemExit("generic concurrency workflow does not pin Rust 1.95.0")
+for required_text in (
+    "toolchain: stable",
+    "components: clippy",
+    "PROPTEST_CASES: 4096",
+    "--test plan_safety",
+    "--test lease_contract",
+    "cockroachdb/cockroach:v25.2.4",
+    "persist-credentials: false",
+):
+    if required_text not in base_workflow:
+        raise SystemExit(f"formal concurrency workflow omits {required_text}")
 
 credential = re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY")
 for path in tracked_files:
@@ -133,5 +146,6 @@ for path in tracked_files:
 
 print(
     f"validated {manifest['organization']}/{manifest['repository']} with "
-    f"Canonical source {source['sourceCommit']} and DPM {expected_dpm}"
+    f"Canonical source {source['sourceCommit']}, source-declared DPM "
+    f"{source['dpmCommit']}, and certification DPM {expected_dpm}"
 )
