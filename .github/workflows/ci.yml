@@ -38,8 +38,8 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
         with:
-          toolchain: stable
-          components: clippy
+          toolchain: "1.97.1"
+          components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
@@ -47,6 +47,12 @@ jobs:
 
       - name: Validate exact product pin and repository contract
         run: python3 scripts/verify-repository.py
+
+      - name: Check the pinned formatting baseline
+        run: >-
+          cargo fmt
+          --manifest-path vendor/declarative-postgres-migrate.rs/Cargo.toml
+          --all -- --check
 
       - name: Lint typed-plan safety at the pinned product SHA
         run: >-
@@ -74,6 +80,12 @@ jobs:
           cargo test \
             --manifest-path vendor/declarative-postgres-migrate.rs/Cargo.toml \
             --locked --test plan_safety
+
+      - name: Guard CLI lease wiring order at the pinned product SHA
+        run: >-
+          cargo test
+          --manifest-path vendor/declarative-postgres-migrate.rs/Cargo.toml
+          --locked --test apply_lease_wiring
 
       - name: Prove PostgreSQL advisory-lease exclusion and recovery
         env:
