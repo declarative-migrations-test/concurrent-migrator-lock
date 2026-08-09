@@ -2,7 +2,22 @@
 
 Concurrent migrator stress certification, final convergence proof, idempotent replay, and actionable contender failure classification.
 
-This repository is part of the isolated `declarative-migrations-test` certification fleet. It pins the production implementation as a Git submodule at `declarative-migrations/declarative-postgres-migrate.rs@21eb846e356b2a5aff068b21e77903e6cca50452` and exercises real PostgreSQL and/or CockroachDB instances in GitHub Actions.
+This repository is part of the isolated `declarative-migrations-test` certification fleet. It pins the certification implementation as a Git submodule at `declarative-migrations/declarative-postgres-migrate.rs@a5e868acc0206fa9c3e91b5e36e0b1b111805885` and exercises real PostgreSQL and CockroachDB instances in GitHub Actions. The Canonical source contract independently records its production DPM revision `d05a7880987ddaa271fa88b52c787390ef12b899`, so the lane detects both application-contract drift and migration-engine regressions.
+
+## Canonical quote concurrency lane
+
+The Canonical lane checks out `canonical-cloud/canonical-api-server.rs@7987c05944df5c03ff2fcbeeedf2c8e79f973d75` exactly and verifies its schema digest, dedicated `canonical_cloud__quote` namespace, bootstrap/grants paths, minimum PostgreSQL major, source-declared DPM revision, and distinct certification DPM revision.
+
+On supported PostgreSQL 17 and 18 it runs eight concurrent applies for:
+
+- an empty dedicated namespace after least-privilege role bootstrap;
+- a converged all-success no-op wave;
+- repair of a deliberately removed owner policy while durable quote data exists;
+- a second all-success no-op wave after recovery.
+
+The lane rejects contender crashes and missing diagnostics, requires deterministic serialized recovery, preserves synthetic context/quote/event rows, and revalidates schema ownership, forced RLS, API/web privilege separation, public-schema denial, and owner isolation.
+
+No production database, Cloudflare, R2, Supabase, Kubernetes, or Gemini credential is available to this repository.
 
 ## Fleet
 
