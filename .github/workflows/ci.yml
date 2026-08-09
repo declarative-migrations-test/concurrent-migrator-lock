@@ -128,6 +128,21 @@ jobs:
           COCKROACH_ADMIN_URL: postgresql://root@localhost:26257/defaultdb?sslmode=disable
         run: scripts/test-concurrency.sh
 
+      - name: Ensure bounded failure evidence exists
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/concurrency
+          if ! find artifacts/concurrency -type f -print -quit | grep -q .; then
+            printf '%s\n' \
+              'result=failed' \
+              'classification=harness-or-product-regression' \
+              "source_commit=$(python3 -c 'import json; print(json.load(open("bootstrap-manifest.json"))["production_dependency"]["commit"])')" \
+              "workflow_commit=${GITHUB_SHA}" \
+              > artifacts/concurrency/early-failure.txt
+          fi
+
       - name: Upload contender evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
