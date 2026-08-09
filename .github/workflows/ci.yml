@@ -38,8 +38,8 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
         with:
-          toolchain: stable
-          components: clippy
+          toolchain: "1.97.1"
+          components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
@@ -47,6 +47,12 @@ jobs:
 
       - name: Validate exact product pin and repository contract
         run: python3 scripts/verify-repository.py
+
+      - name: Check the pinned formatting baseline
+        run: >-
+          cargo fmt
+          --manifest-path vendor/declarative-postgres-migrate.rs/Cargo.toml
+          --all -- --check
 
       - name: Lint typed-plan safety at the pinned product SHA
         run: >-
@@ -74,6 +80,12 @@ jobs:
           cargo test \
             --manifest-path vendor/declarative-postgres-migrate.rs/Cargo.toml \
             --locked --test plan_safety
+
+      - name: Guard CLI lease wiring order at the pinned product SHA
+        run: >-
+          cargo test
+          --manifest-path vendor/declarative-postgres-migrate.rs/Cargo.toml
+          --locked --test apply_lease_wiring
 
       - name: Prove PostgreSQL advisory-lease exclusion and recovery
         env:
@@ -115,6 +127,21 @@ jobs:
           POSTGRES_ADMIN_URL: postgres://postgres@localhost:5432/postgres
           COCKROACH_ADMIN_URL: postgresql://root@localhost:26257/defaultdb?sslmode=disable
         run: scripts/test-concurrency.sh
+
+      - name: Ensure bounded failure evidence exists
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/concurrency
+          if ! find artifacts/concurrency -type f -print -quit | grep -q .; then
+            printf '%s\n' \
+              'result=failed' \
+              'classification=harness-or-product-regression' \
+              "source_commit=$(python3 -c 'import json; print(json.load(open("bootstrap-manifest.json"))["production_dependency"]["commit"])')" \
+              "workflow_commit=${GITHUB_SHA}" \
+              > artifacts/concurrency/early-failure.txt
+          fi
 
       - name: Upload contender evidence
         if: always()

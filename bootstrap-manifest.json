@@ -1,9 +1,9 @@
 {
-  "bootstrap_date": "2026-08-04",
-  "description": "Exact-SHA formal lifecycle, typed-plan borrow checking, advisory-lease exclusion, generic PostgreSQL/Cockroach contention, Canonical quote PostgreSQL 17-18 contention, convergence, recovery, and idempotent replay certification.",
+  "bootstrap_date": "2026-08-09",
+  "description": "Exact-SHA formal lifecycle, typed-plan borrow checking, reviewed-plan lease wiring, advisory-lease exclusion, generic PostgreSQL/Cockroach contention, Canonical quote PostgreSQL 17-18 contention, convergence, recovery, and idempotent replay certification.",
   "organization": "declarative-migrations-test",
   "production_dependency": {
-    "commit": "a5e868acc0206fa9c3e91b5e36e0b1b111805885",
+    "commit": "b829384df970e3b9415b566ef9d87511bdc163c7",
     "path": "vendor/declarative-postgres-migrate.rs",
     "repository": "declarative-migrations/declarative-postgres-migrate.rs",
     "transport": "git-submodule"

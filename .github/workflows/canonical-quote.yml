@@ -97,7 +97,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
         with:
-          toolchain: "1.95.0"
+          toolchain: "1.97.1"
 
       - name: Cache pinned dpm build
         uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
@@ -122,6 +122,23 @@ jobs:
           POSTGRES_MAJOR: ${{ matrix.postgres }}
           TEST_ROLE_PASSWORD: quote-concurrency
         run: bash scripts/test-canonical-quote-concurrency.sh
+
+      - name: Ensure bounded failure evidence exists
+        if: always()
+        shell: bash
+        env:
+          EVIDENCE_DIR: artifacts/canonical-quote-concurrency/pg${{ matrix.postgres }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          if ! find "$EVIDENCE_DIR" -type f -print -quit | grep -q .; then
+            printf '%s\n' \
+              'result=failed' \
+              'classification=harness-or-product-regression' \
+              "source_commit=$(python3 -c 'import json; print(json.load(open("canonical-quote-source.json"))["certificationDpmCommit"])')" \
+              "workflow_commit=${GITHUB_SHA}" \
+              > "$EVIDENCE_DIR/early-failure.txt"
+          fi
 
       - name: Upload bounded contender and recovery evidence
         if: always()

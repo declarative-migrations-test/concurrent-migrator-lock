@@ -7,7 +7,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 manifest = json.loads((root / "bootstrap-manifest.json").read_text())
 source = json.loads((root / "canonical-quote-source.json").read_text())
-expected_dpm = "a5e868acc0206fa9c3e91b5e36e0b1b111805885"
+expected_dpm = "b829384df970e3b9415b566ef9d87511bdc163c7"
 
 required = [
     "README.md",
@@ -107,7 +107,7 @@ for required_text in (
     f"repository: {source['sourceRepository']}",
     f"ref: {source['sourceCommit']}",
     "postgres: ['17', '18']",
-    "toolchain: \"1.95.0\"",
+    'toolchain: "1.97.1"',
     "persist-credentials: false",
     "certificationDpmCommit",
     source["schemaPath"],
@@ -120,10 +120,11 @@ for required_text in (
 
 base_workflow = (root / ".github/workflows/ci.yml").read_text()
 for required_text in (
-    "toolchain: stable",
-    "components: clippy",
+    'toolchain: "1.97.1"',
+    "components: rustfmt, clippy",
     "PROPTEST_CASES: 4096",
     "--test plan_safety",
+    "--test apply_lease_wiring",
     "--test lease_contract",
     "cockroachdb/cockroach:v25.2.4",
     "persist-credentials: false",
@@ -131,7 +132,7 @@ for required_text in (
     if required_text not in base_workflow:
         raise SystemExit(f"formal concurrency workflow omits {required_text}")
 
-credential = re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY")
+credential = re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}|lin_api_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY")
 for path in tracked_files:
     if not path.is_file() or path.stat().st_size > 1_000_000:
         continue
