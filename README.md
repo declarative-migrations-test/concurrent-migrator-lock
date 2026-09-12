@@ -38,3 +38,18 @@ scripts/build-dpm.sh
 ```
 
 Every behavior change must add a regression, preserve exact dependency pinning, avoid credentials in source or logs, and land through a pull request.
+
+## Test-org harness metadata
+
+Recorded by the `zed-pkg-test/test-org-fleet` bootstrapper (the generated harness under `scripts/`, `tests/` and `pyproject.toml`); the certification lane above remains the source of truth.
+
+- **Readiness:** `ready`
+- **Primary dependency strategy:** `matrix`
+- **Scheduled cadence:** `17 5 * * *` UTC
+- **Live infrastructure:** PostgreSQL, multi-process runner
+
+Acceptance objectives:
+
+1. Verify competing migrators, single ownership, killed-owner recovery, and duplicate-record prevention across the supported happy-path states and canonical fixtures.
+2. Verify competing migrators, single ownership, killed-owner recovery, and duplicate-record prevention under retries, interruption, concurrency, offline operation, or partial failure.
+3. Verify competing migrators, single ownership, killed-owner recovery, and duplicate-record prevention preserves authorization, idempotency, integrity, observability, and actionable failure classification.
