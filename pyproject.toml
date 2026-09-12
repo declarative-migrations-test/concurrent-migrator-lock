@@ -8,6 +8,10 @@ requires-python=">=3.11"
 dependencies=["PyYAML>=6.0.3,<7"]
 [project.optional-dependencies]
 test=["pytest>=9.1.1,<10"]
+[tool.setuptools]
+# This distribution installs harness dependencies; fixtures and vendor trees
+# are executed from the checkout and must never become Python packages.
+packages=[]
 [tool.pytest.ini_options]
 addopts="-ra"
 testpaths=["tests"]

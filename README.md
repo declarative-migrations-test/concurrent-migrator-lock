@@ -2,7 +2,7 @@
 
 Concurrent migrator stress certification, final convergence proof, idempotent replay, and actionable contender failure classification.
 
-This repository is part of the isolated `declarative-migrations-test` certification fleet. It pins the certification implementation as a Git submodule at `declarative-migrations/declarative-postgres-migrate.rs@a5e868acc0206fa9c3e91b5e36e0b1b111805885` and exercises real PostgreSQL and CockroachDB instances in GitHub Actions. The Canonical source contract independently records its production DPM revision `d05a7880987ddaa271fa88b52c787390ef12b899`, so the lane detects both application-contract drift and migration-engine regressions.
+This repository is part of the isolated `declarative-migrations-test` certification fleet. It pins the certification implementation as a Git submodule at `declarative-migrations/declarative-postgres-migrate.rs@b829384df970e3b9415b566ef9d87511bdc163c7` and exercises real PostgreSQL and CockroachDB instances in GitHub Actions. The Canonical source contract independently records its production DPM revision `d05a7880987ddaa271fa88b52c787390ef12b899`, so the lane detects both application-contract drift and migration-engine regressions.
 
 ## Canonical quote concurrency lane
 
@@ -53,3 +53,14 @@ Acceptance objectives:
 1. Verify competing migrators, single ownership, killed-owner recovery, and duplicate-record prevention across the supported happy-path states and canonical fixtures.
 2. Verify competing migrators, single ownership, killed-owner recovery, and duplicate-record prevention under retries, interruption, concurrency, offline operation, or partial failure.
 3. Verify competing migrators, single ownership, killed-owner recovery, and duplicate-record prevention preserves authorization, idempotency, integrity, observability, and actionable failure classification.
+
+## Retained Python harness
+
+The current `zed-pkg-test/zed-pkg-e2e` generator emits the Node plan contract
+and does not emit this legacy Python dependency manifest. This repository
+therefore maintains its Python installation gate alongside the certification
+overlay. The Python distribution contains dependency metadata only; fixtures,
+source pins, evidence, and scratch directories are never installable packages.
+Pull requests install and test it on Python 3.11 and 3.12, verify the wheel
+contents, and require README/agent revision references to match the certified
+engine while retaining the separate Canonical source-declared revision.
