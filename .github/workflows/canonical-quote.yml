@@ -38,14 +38,14 @@ jobs:
           --health-retries 20
     steps:
       - name: Check out concurrency harness
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
 
       - name: Check out exact Canonical quote source
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: canonical-cloud/canonical-api-server.rs
           ref: 7987c05944df5c03ff2fcbeeedf2c8e79f973d75
